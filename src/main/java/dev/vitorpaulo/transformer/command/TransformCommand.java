@@ -31,6 +31,9 @@ public class TransformCommand implements Callable<Integer> {
     @CommandLine.Option(names = { "--p", "-package" }, description = "Base package. Example: dev.vitorpaulo.transformer", required = true)
     String basePackage;
 
+    @CommandLine.Option(names = { "--tp", "-parameter" }, description = "Transformer parameters (KEY=VALUE). Parameters: GENERATE_CONTROLLER")
+    List<String> parameters;
+
     public Integer call() {
         if (input == null) {
             log.error("Input files and urls are empty.");
