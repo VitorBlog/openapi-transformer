@@ -1,5 +1,6 @@
 package dev.vitorpaulo.transformer.transformer;
 
+import dev.vitorpaulo.transformer.model.Api;
 import dev.vitorpaulo.transformer.model.Transformer;
 import dev.vitorpaulo.transformer.model.TransformerType;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -36,11 +37,11 @@ public class SpringFeignTransformer implements Transformer {
 
     @Override
     @SneakyThrows
-    public void run(String basePackage, File output, OpenAPI openAPI) {
+    public void run(String basePackage, File output, Api api) {
         this.basePackage = basePackage;
 
         generateFolders(output);
-        generateSchemas(openAPI);
+        generateSchemas(api);
     }
 
     private void generateFolders(File output) {
@@ -58,8 +59,8 @@ public class SpringFeignTransformer implements Transformer {
         }
     }
 
-    private void generateSchemas(OpenAPI openAPI) throws IOException {
-        log.info("Transforming '{}'...", openAPI.getInfo().getTitle());
+    private void generateSchemas(Api api) throws IOException {
+        log.info("Transforming '{}'...", api.getName());
 
         for (Map.Entry<String, ?> entry : openAPI.getComponents().getSchemas().entrySet()) {
             if (entry.getKey().startsWith("##")) {
