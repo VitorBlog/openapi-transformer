@@ -1,8 +1,6 @@
 package dev.vitorpaulo.transformer.transformer;
 
-import dev.vitorpaulo.transformer.model.Api;
-import dev.vitorpaulo.transformer.model.Transformer;
-import dev.vitorpaulo.transformer.model.TransformerType;
+import dev.vitorpaulo.transformer.model.*;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Schema;
 import lombok.SneakyThrows;
@@ -41,10 +39,13 @@ public class SpringFeignTransformer implements Transformer {
         this.basePackage = basePackage;
 
         generateFolders(output);
-        generateSchemas(api);
+
+        log.info("Transforming '{}'...", api.getName());
+        generateDto(api);
     }
 
-    private void generateFolders(File output) {
+    @Override
+    public void generateFolders(File output) {
         log.info("Generating folders...");
 
         modelFolder = new File(output, "model");
@@ -59,19 +60,13 @@ public class SpringFeignTransformer implements Transformer {
         }
     }
 
-    private void generateSchemas(Api api) throws IOException {
-        log.info("Transforming '{}'...", api.getName());
+    @Override
+    @SneakyThrows
+    public void generateDto(Api api) {
+        for (Dto dto : api.getDtoList()) {
+            final var file = new File(dto.getRequest()? requestFolder : responseFolder, "%s.%s".formatted(StringUtils.capitalize(dto.getName()), "java"));
 
-        for (Map.Entry<String, ?> entry : openAPI.getComponents().getSchemas().entrySet()) {
-            if (entry.getKey().startsWith("##")) {
-                continue;
-            }
-
-            final var schema = (Schema<?>) entry.getValue();
-            final var isRequest = isRequest(entry.getKey());
-            final var file = new File(isRequest? requestFolder : responseFolder, "%s.%s".formatted(StringUtils.capitalize(entry.getKey()), "java"));
-
-            log.info("Creating {} '{}' with type '{}'...", getPackage(entry.getKey()), entry.getKey(), schema.getType());
+            log.info("Creating {} '{}'...", dto.getPackageName(), dto.getName());
 
             if (!file.createNewFile()) {
                 log.error("Cannot create '{}' file.", file.getName());
@@ -82,45 +77,51 @@ public class SpringFeignTransformer implements Transformer {
                     file,
                     classTemplate.formatted(
                             basePackage,
-                            getPackage(entry.getKey()),
+                            dto.getPackageName(),
                             StringUtils.join(imports, "\n"),
-                            entry.getKey(),
-                            generateContent(schema)
+                            dto.getName(),
+                            generateContent(dto)
                     ),
                     StandardCharsets.UTF_8
             );
         }
     }
 
-    private String generateContent(Schema<?> schema) {
+    @Override
+    public String generateController(Controller controller) {
+        return null;
+    }
+
+    @Override
+    public String generateContent(Dto dto) {
         final var content = new StringBuilder();
-        for (var key : schema.getProperties().keySet()) {
+        for (DtoProperty property : dto.getProperties()) {
             content.append("\n\tprivate final ")
-                    .append(validateType(schema.getProperties().get(key)))
+                    .append(formatType(property))
                     .append(" ")
-                    .append(key)
+                    .append(property.getName())
                     .append(";");
         }
 
         return content.toString();
     }
-    
-    private String validateType(Schema<?> value) {
-        var type = StringUtils.capitalize(value.getType());
-        
+
+    @Override
+    public String formatType(DtoProperty property) {
+        var type = StringUtils.capitalize(property.getType());
+
         if (Objects.equals(type, "Array")) {
-            final var path = value.getItems().get$ref();
             var arrayType = "*";
 
-            if (StringUtils.isNotBlank(path)) {
-                arrayType = FilenameUtils.getName(path);
+            if (StringUtils.isNotBlank(property.getSubtype())) {
+                arrayType = property.getSubtype();
                 addImport(basePackage, "%s.%s".formatted(getPackage(arrayType), arrayType));
             }
 
             type = "List<%s>".formatted(arrayType);
             addImport("java.util", "List");
         }
-        
+
         return type;
     }
 
@@ -132,11 +133,7 @@ public class SpringFeignTransformer implements Transformer {
         }
     }
 
-    private Boolean isRequest(String name) {
-        return name.endsWith("Request");
-    }
-
     private String getPackage(String name) {
-        return isRequest(name)? "request" : "response";
+        return name.endsWith("Request")? "request" : "response";
     }
 }

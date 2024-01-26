@@ -2,12 +2,14 @@ package dev.vitorpaulo.transformer.service;
 
 import dev.vitorpaulo.transformer.model.Api;
 import dev.vitorpaulo.transformer.model.Dto;
+import dev.vitorpaulo.transformer.model.DtoProperty;
 import io.swagger.parser.OpenAPIParser;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.media.Schema;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -71,11 +73,29 @@ public class OpenApiService {
                     Dto.builder()
                             .request(isRequest)
                             .name(entry.getKey())
+                            .properties(mapDtoProperties((Schema<?>) entry.getValue()))
                             .packageName(isRequest? "request" : "response")
                             .build()
             );
         }
 
         return dtoList;
+    }
+
+    private List<DtoProperty> mapDtoProperties(Schema<?> schema) {
+        final var properties = new ArrayList<DtoProperty>();
+        for (var key : schema.getProperties().keySet()) {
+            final var value = schema.getProperties().get(key);
+
+            properties.add(
+                    DtoProperty.builder()
+                            .name(key)
+                            .type(value.getType())
+                            .subtype(FilenameUtils.getName(StringUtils.defaultString(value.getItems().get$ref(), "*")))
+                            .build()
+            );
+        }
+
+        return properties;
     }
 }
