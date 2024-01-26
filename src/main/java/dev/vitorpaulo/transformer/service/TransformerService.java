@@ -1,5 +1,6 @@
 package dev.vitorpaulo.transformer.service;
 
+import dev.vitorpaulo.transformer.model.Api;
 import dev.vitorpaulo.transformer.model.Transformer;
 import dev.vitorpaulo.transformer.model.TransformerType;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -18,10 +19,10 @@ public class TransformerService {
 
     private final List<Transformer> transformers;
 
-    public void executeTransformer(Integer index, String basePackage, String type, String output, OpenAPI openAPI) throws FileAlreadyExistsException {
+    public void executeTransformer(Integer index, String basePackage, String type, String output, Api api) throws FileAlreadyExistsException {
         final var outputFolder = new File(
                 output.replace("{index}", index.toString())
-                        .replace("{name}", openAPI.getInfo().getTitle())
+                        .replace("{name}", api.getName())
         );
 
         if (outputFolder.exists() || !outputFolder.mkdirs()) {
@@ -33,7 +34,7 @@ public class TransformerService {
         final var transformer = findTransformer(type);
         log.info("Starting '{}' transformer...", transformer.getType().name());
 
-        transformer.run(basePackage, outputFolder, openAPI);
+        transformer.run(basePackage, outputFolder, api);
     }
 
     private Transformer findTransformer(String type) {

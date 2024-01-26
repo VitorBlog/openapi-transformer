@@ -1,5 +1,6 @@
 package dev.vitorpaulo.transformer.command;
 
+import dev.vitorpaulo.transformer.model.Api;
 import dev.vitorpaulo.transformer.service.OpenApiService;
 import dev.vitorpaulo.transformer.service.TransformerService;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -43,7 +44,7 @@ public class TransformCommand implements Callable<Integer> {
         final var apis = openApiService.readAll(input);
 
        try {
-           for (OpenAPI value : apis) {
+           for (Api value : apis) {
                transformerService.executeTransformer(apis.indexOf(value), basePackage, transformer, output, value);
            }
 

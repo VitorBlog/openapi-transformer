@@ -1,12 +1,20 @@
 package dev.vitorpaulo.transformer.model;
 
-import io.swagger.v3.oas.models.OpenAPI;
-
 import java.io.File;
 
 public interface Transformer {
 
     TransformerType getType();
 
-    void run(String basePackage, File output, OpenAPI openAPI);
+    void run(String basePackage, File output, Api api);
+
+    void generateFolders(File output);
+
+    void generateDto(Api api);
+
+    String generateController(Controller controller);
+
+    String generateContent(Dto dto);
+
+    String formatType(DtoProperty dtoProperty);
 }
